@@ -21,7 +21,7 @@ public class Main {
 
 		try {
 		
-			File f = new File("tests/test-1.java");
+			File f = new File("tests/test-2.java");
 			f.createNewFile();
 			FileInputStream fs = new FileInputStream(f);
 			Node root = new MiniJavaParser(fs).Goal();

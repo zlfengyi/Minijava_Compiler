@@ -1,42 +1,24 @@
 class test107{
     public static void main(String[] a){
-	System.out.println(new Test().start());
+	   System.out.println(new CT().hzz());
     }
 }
 
-class Test2 extends Test {
+class CT {
+    public int hzz() {
+        boolean f1;
+        boolean f2;
+        int ret;
 
-    public boolean next() {
+        f1 = true;
+        f2 = true;
 
-	return true;
+        if (f1 && f2) {
+            ret = 2;
+        } else {
+            ret = 0;
+        }
+        
+        return ret;
     }
-
-}
-
-class Test {
-
-    Test2 test2;
-    boolean b;
-    int[] arr;
-
-    public int start(){
-        int cc0;
-      //  b = false;
-      //  arr = new int[123];
-      //  cc0 = 123;
-	return 0;
-    }
-
-    public int next(){ // TE
-        int a;
-        int a0;
-      //  boolean a0;
-	return 0;
-    }
-
-/*    public int start(int r) {
-        int a;
-        return 0;
-    }
-*///
 }

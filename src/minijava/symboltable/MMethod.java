@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 
-public class MMethod extends MIdentifier {
-	private String returnType;
-	private HashMap<String, MVar> varTable = new HashMap<String, MVar>();
-	private ArrayList<MVar> paramList = new ArrayList<MVar>();
+public class MMethod extends MIdentifier implements VarContainer {
+	protected String returnType;
+	protected String pigletName;
+	protected HashMap<String, MVar> varTable = new HashMap<String, MVar>();
+	protected ArrayList<MVar> paramList = new ArrayList<MVar>();
 	
 	
 	public MMethod(String v_name, String v_returnType, MIdentifier v_parent, int v_line, int v_col) {
@@ -31,12 +32,31 @@ public class MMethod extends MIdentifier {
 		return insertVar(newParam);
 	}
 	
+	public int alloc(int currentTemp) {
+		int num = 0;
+		for (MVar mvar : paramList) {
+			mvar.setTemp(++num);
+		}
+		
+		for (MVar mvar : varTable.values()) {
+			boolean flag = true;
+			for (MVar mvar2 : paramList) {
+				if (mvar2.getName().equals(mvar.getName())) 
+					flag = false;
+			}	
+			if (flag)
+				mvar.setTemp(currentTemp++);
+		}
+		return currentTemp;
+	}
+
+//--------------------Getters and Setters---------------------------//
 	@Override
 	public MVar getVar(String name) {
 		if (varTable.containsKey(name)) {
 			return varTable.get(name);
 		}
-		return this.parent.getVar(name);
+		return ((MClass)this.parent).getVar(name);
 	}
 	
 	public String getReturnType() {
@@ -45,6 +65,18 @@ public class MMethod extends MIdentifier {
 
 	public void setReturnType(String returnType) {
 		this.returnType = returnType;
+	}
+
+	public String getPigletName() {
+		return pigletName;
+	}
+	
+	public String getPigletDefineName() {
+		return this.pigletName + " [ " + (paramList.size()+1) + " ]";
+	}
+	
+	public void setPigletName(String pigletName) {
+		this.pigletName = pigletName;
 	}
 	
 	

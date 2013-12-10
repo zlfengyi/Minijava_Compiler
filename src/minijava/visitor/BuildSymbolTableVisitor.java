@@ -11,7 +11,7 @@ import minijava.typecheck.ErrorPrinter;
 
 public class BuildSymbolTableVisitor extends GJDepthFirst<MType, MType> {
    private MClassList all_classes_list;
-	
+
    //
    // Auto class visitors--probably don't need to be overridden.
    //
@@ -74,6 +74,8 @@ public class BuildSymbolTableVisitor extends GJDepthFirst<MType, MType> {
       n.f0.accept(this, all_classes_list);
       n.f1.accept(this, all_classes_list);
       n.f2.accept(this, all_classes_list);
+      all_classes_list.updateVarAndMethodTable();
+      
       return _ret;
    }
 
@@ -221,7 +223,7 @@ public class BuildSymbolTableVisitor extends GJDepthFirst<MType, MType> {
       MType type = n.f0.accept(this, argu);
       MIdentifier id = (MIdentifier)n.f1.accept(this, argu);
       MVar newVar = new MVar(id.getName(), type.getType(), (MIdentifier)argu, type.getLine(), type.getColumn());
-      String msg = ((MIdentifier)argu).insertVar(newVar);
+      String msg = ((VarContainer)argu).insertVar(newVar);
       if (msg != null) {
     	  ErrorPrinter.print(newVar.getLine(), newVar.getColumn(), msg);
       }

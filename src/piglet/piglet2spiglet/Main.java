@@ -1,6 +1,9 @@
 package piglet.piglet2spiglet;
 
 
+import minijava.symboltable.MClassList;
+import minijava.symboltable.MType;
+import minijava.visitor.BuildSymbolTableVisitor;
 import piglet.ParseException;
 import piglet.PigletParser;
 import piglet.TokenMgrError;
@@ -17,10 +20,8 @@ public class Main {
     		 * TODO: Implement your own Visitors and other classes.
     		 * 
     		 */
-    		GJDepthFirst v = new GJDepthFirst<Object,Object>() {
-    		};
-    		//Traverse the Abstract Grammar Tree
-    		root.accept(v,null);
+    		
+    		
     	}
     	catch(TokenMgrError e){
     		//Handle Lexical Errors

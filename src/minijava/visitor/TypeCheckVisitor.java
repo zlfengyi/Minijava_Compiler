@@ -429,7 +429,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
    public MType visit(AssignmentStatement n, MType argu) {
 	   
       MIdentifier id = (MIdentifier)n.f0.accept(this, argu);
-      MVar newVar = ((MIdentifier)argu).getVar(id.getName());
+      MVar newVar = ((VarContainer)argu).getVar(id.getName());
    
       if (newVar == null) {
     	  ErrorPrinter.print(id.getLine(), id.getColumn(), 
@@ -454,7 +454,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
    public MType visit(ArrayAssignmentStatement n, MType argu) {
       
 	  MIdentifier id = (MIdentifier)n.f0.accept(this, argu);
-	  MVar newVar = ((MIdentifier) argu).getVar(id.getName());
+	  MVar newVar = ((VarContainer) argu).getVar(id.getName());
 	  checkVarEqual(id, newVar, "int[]", "Not an array \'" + id.getName() + "\'");
 	  
 	  n.f1.accept(this, argu);
@@ -705,7 +705,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       //如果没有type，表明是一个已经声明的变量(indentifier)，在所在的方法中找到相应的变量
       //返回该变量
       if (id != null && id.getType() == null && id.getName() != null) {
-    	  MVar newVar = ((MIdentifier)argu).getVar(id.getName());
+    	  MVar newVar = ((VarContainer)argu).getVar(id.getName());
     	  if (newVar != null) id = newVar;
       }
       return id;

@@ -4,6 +4,7 @@
 package minijava.symboltable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MClassList extends MType {
 	public ArrayList<MClass> classesList = new ArrayList<MClass>(); // 用于存放类
@@ -48,6 +49,7 @@ public class MClassList extends MType {
 		return false;
 	}
 	
+	// name类是否相等 或者继承自 target
 	public boolean classEqualsOrDerives(String name, String target) {
 		if (name == null && target == null) {
 			return true;
@@ -66,5 +68,24 @@ public class MClassList extends MType {
 		}
 		return false;
 	}
+	
+	// 为所有类的变量和方法分配地址
+	// 采用1次间接地址, 设新建的实体引用地址为addr, addr[0]保存函数表的首地址，addr[4, 8, 12..n]依次保存类的成员变量
+	public int alloc(int currentTemp) {
+		HashSet<String> pigletNameTable = new HashSet<String>();
+		for (MClass mclass : classesList) {
+			currentTemp = mclass.alloc(currentTemp, pigletNameTable);
+		}
+		return currentTemp;
+	}
+	
+	public void updateVarAndMethodTable() {
+		for (MClass mclass : classesList) {
+			MClass baseClass = this.getClass(mclass.baseClassName);
+			mclass.setBaseClass(baseClass);
+			mclass.updateVarAndMethodTable();
+		}
+	}
+	
 }
 
