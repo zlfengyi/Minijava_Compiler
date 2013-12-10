@@ -27,5 +27,10 @@ public class Label implements Node {
    public <A> void accept(piglet.visitor.GJVoidVisitor<A> v, A argu) {
       v.visit(this,argu);
    }
+   
+   @Override
+   public String toString() {
+	   return f0.tokenImage;
+   }
 }
 

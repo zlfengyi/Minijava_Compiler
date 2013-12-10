@@ -41,5 +41,10 @@ public class NodeList implements NodeListInterface {
    }
 
    public Vector<Node> nodes;
+   
+   @Override
+   public String toString() {
+	   return "NodeList";
+   }
 }
 

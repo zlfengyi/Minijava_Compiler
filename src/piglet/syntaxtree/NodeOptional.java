@@ -37,5 +37,10 @@ public class NodeOptional implements Node {
    public boolean present()   { return node != null; }
 
    public Node node;
+   
+   @Override
+   public String toString() {
+	   return "NodeOptional";
+   }
 }
 

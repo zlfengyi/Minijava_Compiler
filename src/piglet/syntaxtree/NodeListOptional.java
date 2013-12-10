@@ -42,5 +42,10 @@ public class NodeListOptional implements NodeListInterface {
    }
 
    public Vector<Node> nodes;
+   
+   @Override
+   public String toString() {
+	   return "NodeListOptional";
+   }
 }
 

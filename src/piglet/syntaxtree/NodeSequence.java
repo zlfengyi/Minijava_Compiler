@@ -42,5 +42,10 @@ public class NodeSequence implements NodeListInterface {
    }
 
    public Vector<Node> nodes;
+   
+   @Override 
+   public String toString() {
+	   return "NodeSequence";
+   }
 }
 

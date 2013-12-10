@@ -22,12 +22,13 @@ public class Main {
  
     public static void main(String[] args) {
     	try {
-			FileInputStream fs = new FileInputStream("tests/test-2.java");
+    		FileInputStream fs = new FileInputStream(
+    				"/Users/zlfengyi/Desktop/test/code.java");
 			PrintStream ps = new PrintStream(new FileOutputStream(
-					"/Users/zlfengyi/Desktop/pgi/test1"));
+					"/Users/zlfengyi/Desktop/test/code.pg"));
     		System.setIn(fs);
 			System.setOut(ps);
-			
+		
 			
 			//Node root = new MiniJavaParser(System.in).Goal();
     		Node root = new MiniJavaParser(fs).Goal();

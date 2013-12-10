@@ -5,7 +5,7 @@
 package piglet.visitor;
 import java.util.Enumeration;
 
-import piglet.MSpiglet;
+import piglet.piglet2spiglet.MSpigletExp;
 import piglet.syntaxtree.BinOp;
 import piglet.syntaxtree.CJumpStmt;
 import piglet.syntaxtree.Call;
@@ -38,27 +38,45 @@ import piglet.syntaxtree.Temp;
  * Provides default methods which visit each node in the tree in depth-first
  * order.  Your visitors may extend this class.
  */
-public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
+public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpigletExp> {
+	   protected final int TAB_NUM = 1;
+	   protected int currentTemp;
+	   
+	   public void setTempNum(int x) {
+		   this.currentTemp = x;
+	   }
+	   
+	   public String getNextTemp() {
+		   return "TEMP " + (currentTemp++);
+	   }
 	   //
 	   // Auto class visitors--probably don't need to be overridden.
 	   //
-	   public MSpiglet visit(NodeList n) {
-	      MSpiglet _ret=null;
+	   public MSpigletExp visit(NodeList n) {
+	      MSpigletExp _ret = new MSpigletExp();
 	      int _count=0;
+	      
 	      for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-	         e.nextElement().accept(this);
+	         _ret.append(e.nextElement().accept(this));
 	         _count++;
 	      }
 	      return _ret;
 	   }
 
-	   public MSpiglet visit(NodeListOptional n) {
+	   public MSpigletExp visit(NodeListOptional n) {
 	      if ( n.present() ) {
-	         MSpiglet _ret=null;
+	         MSpigletExp _ret = new MSpigletExp();
 	         int _count=0;
 	         for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-	            e.nextElement().accept(this);
-	            _count++;
+	        	Node n1 = e.nextElement();
+
+	        	//System.out.println((++_count) + " " + n1.toString());
+	        	
+	        	MSpigletExp r1 = n1.accept(this);
+	        	_ret.append(r1);
+	        	if (r1 != null && r1.getTemp() != null)
+	        		_ret.addTemp(r1.getTemp());
+	        	
 	         }
 	         return _ret;
 	      }
@@ -66,24 +84,30 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	         return null;
 	   }
 
-	   public MSpiglet visit(NodeOptional n) {
-	      if ( n.present() )
-	         return n.node.accept(this);
+	   public MSpigletExp visit(NodeOptional n) {
+		  if ( n.present() ) {
+			  if (n.node instanceof Label) {
+				  return new MSpigletExp(n.node.toString(), 0);
+			  }
+			  return n.node.accept(this);
+		  }
 	      else
 	         return null;
 	   }
 
-	   public MSpiglet visit(NodeSequence n) {
-	      MSpiglet _ret=null;
+	   public MSpigletExp visit(NodeSequence n) {
+	      MSpigletExp _ret = new MSpigletExp();
 	      int _count=0;
 	      for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-	         e.nextElement().accept(this);
+	    	  Node n1 = e.nextElement();
+	    	  _ret.append(n1.accept(this));
+	    	  
 	         _count++;
 	      }
 	      return _ret;
 	   }
 
-	   public MSpiglet visit(NodeToken n) { return null; }
+	   public MSpigletExp visit(NodeToken n) { return null; }
 
 	   //
 	   // User-generated visitor methods below
@@ -96,11 +120,11 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f3 -> ( Procedure() )*
 	    * f4 -> <EOF>
 	    */
-	   public MSpiglet visit(Goal n) {
-	      MSpiglet _ret = new MSpiglet();
-	      _ret.append("MAIN", 0);
+	   public MSpigletExp visit(Goal n) {
+	      MSpigletExp _ret = new MSpigletExp();
+	      _ret.append(new MSpigletExp("MAIN", 0));
 	      _ret.append(n.f1.accept(this));
-	      _ret.append("END", 0);
+	      _ret.append(new MSpigletExp("END", 0));
 	      _ret.append(n.f3.accept(this));
 	      
 	      return _ret;
@@ -109,8 +133,8 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	   /**
 	    * f0 -> ( ( Label() )? Stmt() )*
 	    */
-	   public MSpiglet visit(StmtList n) {
-	      MSpiglet _ret = n.f0.accept(this);
+	   public MSpigletExp visit(StmtList n) {
+	      MSpigletExp _ret = n.f0.accept(this);
 	      
 	      return _ret;
 	   }
@@ -122,13 +146,17 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f3 -> "]"
 	    * f4 -> StmtExp()
 	    */
-	   public MSpiglet visit(Procedure n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
-	      n.f3.accept(this);
-	      n.f4.accept(this);
+	   public MSpigletExp visit(Procedure n) {
+	      MSpigletExp _ret = new MSpigletExp(
+	    		  n.f0.f0.tokenImage + "[" + n.f2.f0.tokenImage + "]"
+	    		  , 0);
+	      
+	      MSpigletExp r1 = n.f4.accept(this);
+	      _ret.append(new MSpigletExp("BEGIN", 0));
+	      _ret.append(r1);
+	      _ret.append(new MSpigletExp("RETURN " + r1.getTemp(), TAB_NUM));
+	      _ret.append(new MSpigletExp("END", 0));
+	      
 	      return _ret;
 	   }
 
@@ -142,28 +170,28 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    *       | MoveStmt()
 	    *       | PrintStmt()
 	    */
-	   public MSpiglet visit(Stmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
+	   public MSpigletExp visit(Stmt n) {
+	      MSpigletExp _ret = n.f0.accept(this);
+	      
 	      return _ret;
 	   }
 
 	   /**
 	    * f0 -> "NOOP"
 	    */
-	   public MSpiglet visit(NoOpStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
+	   public MSpigletExp visit(NoOpStmt n) {
+	      MSpigletExp _ret = new MSpigletExp("NOOP", TAB_NUM);
+
 	      return _ret;
 	   }
 
 	   /**
 	    * f0 -> "ERROR"
 	    */
-	   public MSpiglet visit(ErrorStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      return _ret;
+	   public MSpigletExp visit(ErrorStmt n) {
+		   MSpigletExp _ret = new MSpigletExp("ERROR", TAB_NUM);
+
+		   return _ret;
 	   }
 
 	   /**
@@ -171,11 +199,15 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f1 -> Exp()
 	    * f2 -> Label()
 	    */
-	   public MSpiglet visit(CJumpStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
+	   public MSpigletExp visit(CJumpStmt n) {
+	      MSpigletExp r1 = n.f1.accept(this);
+	      MSpigletExp _ret = new MSpigletExp();
+	      
+	      _ret.append(r1);
+	      _ret.append(new MSpigletExp(
+	    		  "CJUMP " + r1.getTemp() + " " + n.f2.f0.tokenImage,
+	    		  TAB_NUM));
+	      
 	      return _ret;
 	   }
 
@@ -183,10 +215,9 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f0 -> "JUMP"
 	    * f1 -> Label()
 	    */
-	   public MSpiglet visit(JumpStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
+	   public MSpigletExp visit(JumpStmt n) {
+	      MSpigletExp _ret = new MSpigletExp("JUMP " + n.f1.f0.tokenImage, TAB_NUM); 
+	      
 	      return _ret;
 	   }
 
@@ -196,13 +227,18 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f2 -> IntegerLiteral()
 	    * f3 -> Exp()
 	    */
-	   public MSpiglet visit(HStoreStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
-	      n.f3.accept(this);
-	      return _ret;
+	   public MSpigletExp visit(HStoreStmt n) {
+		  MSpigletExp r1 = n.f1.accept(this);
+		  MSpigletExp r2 = n.f3.accept(this);
+		  MSpigletExp _ret = new MSpigletExp();
+		  
+		  _ret.append(r1);
+		  _ret.append(r2);
+		  _ret.append(new MSpigletExp(
+				  "HSTORE " + r1.getTemp() + " " + n.f2.f0.tokenImage + " " + r2.getTemp()
+				  , TAB_NUM));
+		  
+		  return _ret;
 	   }
 
 	   /**
@@ -211,13 +247,18 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f2 -> Exp()
 	    * f3 -> IntegerLiteral()
 	    */
-	   public MSpiglet visit(HLoadStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
-	      n.f3.accept(this);
-	      return _ret;
+	   public MSpigletExp visit(HLoadStmt n) {
+		   MSpigletExp r1 = n.f1.accept(this);
+		   MSpigletExp r2 = n.f2.accept(this);
+		   MSpigletExp _ret = new MSpigletExp();
+		  
+		   _ret.append(r1);
+		   _ret.append(r2);
+		   _ret.append(new MSpigletExp(
+				  "HLOAD " + r1.getTemp() + " " + r2.getTemp() + " " + n.f3.f0.tokenImage
+				  , TAB_NUM));
+			  
+		  return _ret;
 	   }
 
 	   /**
@@ -225,11 +266,17 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f1 -> Temp()
 	    * f2 -> Exp()
 	    */
-	   public MSpiglet visit(MoveStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
+	   public MSpigletExp visit(MoveStmt n) {
+		  MSpigletExp r1 = n.f1.accept(this);
+		  MSpigletExp r2 = n.f2.accept(this);
+		  MSpigletExp _ret = new MSpigletExp();
+		  
+		  _ret.append(r1);
+		  _ret.append(r2);
+		  _ret.append(new MSpigletExp(
+				  "MOVE " + r1.getTemp() + " " + r2.getTemp()
+				  , TAB_NUM));
+		  
 	      return _ret;
 	   }
 
@@ -237,10 +284,15 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f0 -> "PRINT"
 	    * f1 -> Exp()
 	    */
-	   public MSpiglet visit(PrintStmt n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
+	   public MSpigletExp visit(PrintStmt n) {
+		  MSpigletExp r1 = n.f1.accept(this);
+		  MSpigletExp _ret = new MSpigletExp();
+		  
+		  _ret.append(r1);
+		  _ret.append(new MSpigletExp(
+				  "PRINT " + r1.getTemp()
+				  , TAB_NUM));
+		  
 	      return _ret;
 	   }
 
@@ -253,9 +305,8 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    *       | IntegerLiteral()
 	    *       | Label()
 	    */
-	   public MSpiglet visit(Exp n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
+	   public MSpigletExp visit(Exp n) {
+	      MSpigletExp _ret = n.f0.accept(this);
 	      return _ret;
 	   }
 
@@ -266,13 +317,15 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f3 -> Exp()
 	    * f4 -> "END"
 	    */
-	   public MSpiglet visit(StmtExp n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
-	      n.f3.accept(this);
-	      n.f4.accept(this);
+	   public MSpigletExp visit(StmtExp n) {
+		  MSpigletExp r1 = n.f1.accept(this);
+		  MSpigletExp r2 = n.f3.accept(this);
+		  MSpigletExp _ret = new MSpigletExp();
+		  
+		  _ret.append(r1);
+		  _ret.append(r2);
+		  _ret.setTemp(r2.getTemp());
+		  
 	      return _ret;
 	   }
 
@@ -283,13 +336,22 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f3 -> ( Exp() )*
 	    * f4 -> ")"
 	    */
-	   public MSpiglet visit(Call n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
-	      n.f3.accept(this);
-	      n.f4.accept(this);
+	   public MSpigletExp visit(Call n) {
+		  MSpigletExp r1 = n.f1.accept(this);
+		  MSpigletExp r2 = n.f3.accept(this);
+		  MSpigletExp _ret = new MSpigletExp();
+		  String temp1 = this.getNextTemp();
+		  
+		  _ret.append(r1);
+		  _ret.append(r2);
+		  String code = "CALL " + r1.getTemp() + "(";
+		  for (String temp : r2.getTempList()) {
+			  code += temp + " ";
+		  }
+		  code += ")";
+		  _ret.append(new MSpigletExp("MOVE " + temp1 + " " + code, TAB_NUM));
+		  _ret.setTemp(temp1);
+		  
 	      return _ret;
 	   }
 
@@ -297,10 +359,17 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f0 -> "HALLOCATE"
 	    * f1 -> Exp()
 	    */
-	   public MSpiglet visit(HAllocate n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
+	   public MSpigletExp visit(HAllocate n) {
+	      MSpigletExp r1 = n.f1.accept(this);
+	      String temp1 = this.getNextTemp();
+	      
+	      MSpigletExp _ret = new MSpigletExp();
+	      _ret.append(r1);
+	      _ret.append(new MSpigletExp(
+	    		  "MOVE " + temp1 + " HALLOCATE " + r1.getTemp(), 
+	    		  TAB_NUM));
+	      _ret.setTemp(temp1);
+	      
 	      return _ret;
 	   }
 
@@ -309,11 +378,20 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f1 -> Exp()
 	    * f2 -> Exp()
 	    */
-	   public MSpiglet visit(BinOp n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
-	      n.f2.accept(this);
+	   public MSpigletExp visit(BinOp n) {
+	      MSpigletExp r0 = n.f0.accept(this);
+	      MSpigletExp r1 = n.f1.accept(this);
+	      MSpigletExp r2 = n.f2.accept(this);
+	      MSpigletExp _ret = new MSpigletExp();
+	      String temp1 = this.getNextTemp();
+	      
+	      _ret.append(r1);
+	      _ret.append(r2);
+	      _ret.append(new MSpigletExp(
+	    		  "MOVE " + temp1 + " " + r0.getOp() + " " + r1.getTemp() + " " + r2.getTemp()
+	    		  ,TAB_NUM));
+	      _ret.setTemp(temp1);
+	      
 	      return _ret;
 	   }
 
@@ -323,9 +401,16 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    *       | "MINUS"
 	    *       | "TIMES"
 	    */
-	   public MSpiglet visit(Operator n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
+	   public MSpigletExp visit(Operator n) {
+	      String op;
+	      if (n.f0.which == 0) op = "LT";
+	      else if (n.f0.which == 1) op = "PLUS";
+	      else if (n.f0.which == 2) op = "MINUS";
+	      else op = "TIMES";
+	     
+	      MSpigletExp _ret = new MSpigletExp();
+	      _ret.setOp(op);
+	      
 	      return _ret;
 	   }
 
@@ -333,28 +418,37 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
 	    * f0 -> "TEMP"
 	    * f1 -> IntegerLiteral()
 	    */
-	   public MSpiglet visit(Temp n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
-	      n.f1.accept(this);
+	   public MSpigletExp visit(Temp n) {
+	      MSpigletExp _ret = new MSpigletExp();
+	      String temp1 = "TEMP " + n.f1.f0.tokenImage;
+	      _ret.setTemp(temp1);
+	      
 	      return _ret;
 	   }
 
 	   /**
 	    * f0 -> <INTEGER_LITERAL>
 	    */
-	   public MSpiglet visit(IntegerLiteral n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
+	   public MSpigletExp visit(IntegerLiteral n) {
+		  String temp1 = this.getNextTemp();
+			  
+		  MSpigletExp _ret = new MSpigletExp("MOVE " + temp1 + " " + n.f0.tokenImage, TAB_NUM);
+		  _ret.setTemp(temp1);
+	      _ret.setSimpleExp(n.f0.tokenImage);
+	      
 	      return _ret;
 	   }
 
 	   /**
 	    * f0 -> <IDENTIFIER>
 	    */
-	   public MSpiglet visit(Label n) {
-	      MSpiglet _ret=null;
-	      n.f0.accept(this);
+	   public MSpigletExp visit(Label n) {
+		  String temp1 = this.getNextTemp();
+		  
+		  MSpigletExp _ret = new MSpigletExp("MOVE " + temp1 + " " + n.f0.tokenImage, TAB_NUM);
+		  _ret.setTemp(temp1);
+	      _ret.setSimpleExp(n.f0.tokenImage);
+	      
 	      return _ret;
 	   }
 

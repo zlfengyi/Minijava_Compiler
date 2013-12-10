@@ -34,5 +34,10 @@ public class Stmt implements Node {
    public <A> void accept(piglet.visitor.GJVoidVisitor<A> v, A argu) {
       v.visit(this,argu);
    }
+   
+   @Override 
+   public String toString() {
+	   return "Stmt";
+   }
 }
 
