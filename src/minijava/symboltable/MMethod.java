@@ -49,7 +49,18 @@ public class MMethod extends MIdentifier implements VarContainer {
 		}
 		return currentTemp;
 	}
-
+	
+	public MVar getParam(int th) {
+		if (paramList.size() <= th) 
+			return null;
+		else 
+			return paramList.get(th);
+	}
+	
+	public int getParamSize() {
+		return paramList.size();
+	}
+	
 //--------------------Getters and Setters---------------------------//
 	@Override
 	public MVar getVar(String name) {

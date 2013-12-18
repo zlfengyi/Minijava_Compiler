@@ -5,6 +5,7 @@ package minijava.typecheck;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 
 import minijava.MiniJavaParser;
 import minijava.ParseException;
@@ -21,10 +22,8 @@ public class Main {
 
 		try {
 		
-			File f = new File("tests/test-2.java");
-			f.createNewFile();
-			FileInputStream fs = new FileInputStream(f);
-			Node root = new MiniJavaParser(fs).Goal();
+			InputStream is = new FileInputStream("/Users/zlfengyi/Desktop/compiler_fy/task1/test/code.java");
+			Node root = new MiniJavaParser(is).Goal();
 			//Node root = new MiniJavaParser(System.in).Goal();
     		
 			// 初始化符号表中最大的类

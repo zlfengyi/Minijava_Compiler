@@ -74,8 +74,8 @@ public class BuildSymbolTableVisitor extends GJDepthFirst<MType, MType> {
       n.f0.accept(this, all_classes_list);
       n.f1.accept(this, all_classes_list);
       n.f2.accept(this, all_classes_list);
-      all_classes_list.updateVarAndMethodTable();
       
+      all_classes_list.updateBaseClass();
       return _ret;
    }
 

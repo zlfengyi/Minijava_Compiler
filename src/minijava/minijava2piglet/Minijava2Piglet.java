@@ -36,6 +36,7 @@ public class Minijava2Piglet {
 		root.accept(new BuildSymbolTableVisitor(), allClassesList);
 		
 		Java2PigletVisitor v2 = new Java2PigletVisitor();
+		allClassesList.updateVarAndMethodTable();
 		v2.setAllClasses(allClassesList);
 		v2.setCurrentTemp(allClassesList.alloc(20));
 		

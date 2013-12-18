@@ -19,9 +19,9 @@ public class Main {
 			fs = new FileInputStream(
 					"/Users/zlfengyi/Desktop/compiler_fy/task1/test/code.java");
 			PrintStream ps = new PrintStream(new FileOutputStream(
-					"/Users/zlfengyi/Desktop/code.asm"));
+					"/Users/zlfengyi/Desktop/compiler_fy/task1/test/code.kg"));
 			System.setIn(fs);
-			System.setOut(ps);
+		//	System.setOut(ps);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -34,8 +34,8 @@ public class Main {
 		}
 		code = Minijava2Piglet.translate(code);
 		code = Piglet2Spiglet.translate(code);
-		code = Spiglet2Kanga.translate(code);
-		code = Kanga2Mips.translate(code);
+	//	code = Spiglet2Kanga.translate(code);
+		//code = Kanga2Mips.translate(code);
 		
 		System.out.println(code);
 	

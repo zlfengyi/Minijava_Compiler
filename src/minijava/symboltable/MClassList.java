@@ -81,11 +81,15 @@ public class MClassList extends MType {
 	
 	public void updateVarAndMethodTable() {
 		for (MClass mclass : classesList) {
-			MClass baseClass = this.getClass(mclass.baseClassName);
-			mclass.setBaseClass(baseClass);
 			mclass.updateVarAndMethodTable();
 		}
 	}
 	
+	public void updateBaseClass() {
+		for (MClass mclass : classesList) {
+			MClass baseClass = this.getClass(mclass.baseClassName);
+			mclass.setBaseClass(baseClass);
+		}
+	}
 }
 

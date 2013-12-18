@@ -51,6 +51,7 @@ public class MClass extends MIdentifier implements VarContainer {
 			if (this.varTable.containsKey(vName)) continue;
 			this.varTable.put(vName, this.baseClass.varTable.get(vName));
 		}
+		
 		for (String mName : this.baseClass.methodTable.keySet()) {
 			if (this.methodTable.containsKey(mName)) continue;
 			this.methodTable.put(mName, this.baseClass.methodTable.get(mName));
@@ -94,12 +95,20 @@ public class MClass extends MIdentifier implements VarContainer {
 	}
 	
 	public MMethod getMethod(String methodName) {
-		return methodTable.get(methodName);
+		MMethod _ret =  methodTable.get(methodName);
+		if (_ret == null && this.baseClass != null) {
+			_ret = this.baseClass.getMethod(methodName);
+		}
+		return _ret;
 	}
 	
 	@Override
 	public MVar getVar(String name) {
-		return varTable.get(name);
+		MVar _ret = varTable.get(name);
+		if (_ret == null && this.baseClass != null) {
+			_ret = this.baseClass.getVar(name);
+		}
+		return _ret;
 	}
 	
 	public boolean isDeclared() {

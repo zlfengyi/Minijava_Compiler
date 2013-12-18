@@ -60,7 +60,10 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
    // User-generated visitor methods below
    //
 
-   //检查类型type是否已定义，未定义输出错误信息
+   //检查类型type是否已定义， type可能的情况：
+   // MIdentifer, 自定义的一个class
+   // MType, 基本类型 int, int[], boolean
+   // 未定义输出错误信息
    public void checkTypeDeclared(MType type) {
 	   String typeName;
 	   
@@ -78,19 +81,22 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
    }
    
    //判断表达式exp是否为指定的类型，
-   //如果exp没有类型，表明变量没有定义
+   // %如果exp没有类型，表明变量没有定义
    //如果exp不等于目标类型，输出相应的错误信息
-   public void checkExpEqual(MIdentifier exp, String target, String errMsg) {
+   public void checkExpEqual(MType exp, String target, String errMsg) {
 	   if (exp == null) {
 		   System.err.println("exp is null in checkTypeEqual!!!");
 		   return;
 	   }
-	   
+	/*   
 	   if (exp.getType() == null) {
 		   ErrorPrinter.print(exp.getLine(), exp.getColumn(), 
 				   "Undefined variable \'" + exp.getName() + "\'");
 		   return;
-	   } else if (target != null) {
+	   } else
+	*/
+	   
+	   if (target != null) {
 		   if (!allClassesList.classEqualsOrDerives(exp.getType(), target)
 				   && !exp.getType().equals(target)) {
 			   ErrorPrinter.print(exp.getLine(), exp.getColumn(), errMsg);
@@ -116,6 +122,9 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	   }
 	   return true;
    }
+   
+   private int paraNum = -1;
+   private MMethod callingMethod = null;
    
    //----------------------- start visit here -------------------------//
    /**
@@ -240,14 +249,17 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
     	  ErrorPrinter.print(id.getLine(), id.getColumn(),
     			  "Base class doesn't declarated \'" + baseClassName + "\'");
       } else {
+    	  // 循环继承检测
     	  HashSet<String> baseNameSet = new HashSet<String>();
-    	  baseNameSet.add(baseClassName);
+    	  
     	  while (baseClassName != null) {
     		  if (baseClassName.equals(newClass.getName())) {
     			  ErrorPrinter.print(id.getLine(), id.getColumn(),
-    					  "Base class circular extends \'" + newClass.getName() + "\'");
+    					  "class " + baseClassName + " circular extends itself");
     			  break;
-    		  } else if (baseNameSet.contains(baseClassName)) break;
+    		  } else if (baseNameSet.contains(baseClassName)) {
+    			  break;
+    		  }
     		  
     		  baseNameSet.add(baseClassName);
     		  MClass baseClass = allClassesList.getClass(baseClassName);
@@ -314,9 +326,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       n.f8.accept(this, newMethod);
       n.f9.accept(this, newMethod);
       
-      n.f10.accept(this, argu);
-      n.f11.accept(this, argu);
-      n.f12.accept(this, argu);
+      MType exp = n.f10.accept(this, newMethod);
+      checkExpEqual(exp, type.getType(), "Return expression doesn't match return type");
+      
+      n.f11.accept(this, newMethod);
+      n.f12.accept(this, newMethod);
+      
       return _ret;
    }
 
@@ -364,6 +379,8 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	*/
    public MType visit(Type n, MType argu) {
       MType ret = n.f0.accept(this, argu);
+      // 基本类型返回 MType
+      // 自定义类返回 MIdentifer，需要手动设置这个Midentifer的类型为自身名字
       if (ret instanceof MIdentifier) {
     	  ret.setType(((MIdentifier) ret).getName());
       }   
@@ -435,7 +452,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
     	  ErrorPrinter.print(id.getLine(), id.getColumn(), 
     			  "Undefined variable \'" + id.getName() + "\'");
       } else {
-    	  MIdentifier exp = (MIdentifier)n.f2.accept(this, argu);
+    	  MType exp = n.f2.accept(this, argu);
     	  checkExpEqual(exp, newVar.getType(), 
     			  "Type mismatch \'" + id.getName() + " = " + exp.getType() + "\'");
       }
@@ -457,14 +474,10 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	  MVar newVar = ((VarContainer) argu).getVar(id.getName());
 	  checkVarEqual(id, newVar, "int[]", "Not an array \'" + id.getName() + "\'");
 	  
-	  n.f1.accept(this, argu);
-      MIdentifier exp1 = (MIdentifier)n.f2.accept(this, argu);
+	  MType exp1 = n.f2.accept(this, argu);
       checkExpEqual(exp1, "int", "Index is not an Integer");
       
-      n.f3.accept(this, argu);
-      n.f4.accept(this, argu);
-      
-      MIdentifier exp2 = (MIdentifier)n.f5.accept(this, argu);
+      MType exp2 = n.f5.accept(this, argu);
       checkExpEqual(exp2, "int", "Type mismatch, assignment value is not an Integer" );
       
       n.f6.accept(this, argu);
@@ -485,7 +498,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       
-      MIdentifier exp = (MIdentifier)n.f2.accept(this, argu);
+      MType exp = n.f2.accept(this, argu);
       checkExpEqual(exp, "boolean", "Condition expression is not a boolean");
       
       n.f3.accept(this, argu);
@@ -507,7 +520,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       
-      MIdentifier exp = (MIdentifier)n.f2.accept(this, argu);
+      MType exp = n.f2.accept(this, argu);
       checkExpEqual(exp, "boolean", "Condition expression is not a boolean");
       
       n.f3.accept(this, argu);
@@ -527,7 +540,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       
-      MIdentifier exp = (MIdentifier)n.f2.accept(this, argu);
+      MType exp = n.f2.accept(this, argu);
       checkExpEqual(exp, "int", "Unable to print a non-digital expression");
       
       n.f3.accept(this, argu);
@@ -547,7 +560,32 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	*       | PrimaryExpression()
 	*/
    public MType visit(Expression n, MType argu) {
-      return n.f0.accept(this, argu);
+	   MType _ret = n.f0.accept(this, argu);
+	   if (this.paraNum >= 0) {
+	//	 System.out.println(this.callingMethod.getName() + ":  " +_ret.getType());				
+			
+		   MVar param = callingMethod.getParam(this.paraNum++);
+		   if (param == null) {
+			 System.out.println(this.callingMethod.getName() + ": " + this.paraNum);
+			   ErrorPrinter.print(_ret.getLine(), _ret.getColumn(), 
+					   " parameter number in calling method " + this.callingMethod.getName()
+					   + " doesn't match expected number");
+		   } else {
+			   checkExpEqual(_ret, param.getType(), 
+					   _ret.getType() 
+					   + " in calling method " + this.callingMethod.getName()
+					   + " doesn't match expected parameter type "
+					   + param.getType());
+		   }/*
+			   if (!param.getType().equals(_ret.getType())) {
+	//System.out.println(((MIdentifier)_ret).getName());				
+//	System.out.println(this.callingMethod.getName());
+			   ErrorPrinter.print(_ret.getLine(), _ret.getColumn(), 
+					   _ret.getType() + " in MessageSend doesn't match expected type " + param.getType());
+		   }*/
+		   
+	   }
+	   return _ret;
    }
 
    /**
@@ -556,12 +594,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> PrimaryExpression()
 	*/
    public MType visit(AndExpression n, MType argu) {
-      MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
-      MIdentifier exp2 = (MIdentifier)n.f2.accept(this, argu);
+      MType exp1 = n.f0.accept(this, argu);
+      MType exp2 = n.f2.accept(this, argu);
       checkExpEqual(exp1, "boolean", "Left expression of '&&' is not a boolean");
       checkExpEqual(exp2, "boolean", "Right expression of '&&' is not a boolean");
       
-      return new MIdentifier(null, "boolean", exp1.getLine(), exp1.getLine());
+      return new MType("boolean", exp1.getLine(), exp1.getLine());
    }
 
    /**
@@ -570,12 +608,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> PrimaryExpression()
 	*/
    public MType visit(CompareExpression n, MType argu) {
-	  MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
-      MIdentifier exp2 = (MIdentifier)n.f2.accept(this, argu);
+	  MType exp1 = n.f0.accept(this, argu);
+      MType exp2 = n.f2.accept(this, argu);
       checkExpEqual(exp1, "int", "Left expression of '<' is not a int");
       checkExpEqual(exp2, "int", "Right expression of '<' is not a int");
       
-      return new MIdentifier(null, "boolean", exp1.getLine(), exp1.getLine());
+      return new MType("boolean", exp1.getLine(), exp1.getLine());
    }
 
    /**
@@ -584,12 +622,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> PrimaryExpression()
 	*/
    public MType visit(PlusExpression n, MType argu) {
-	  MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
-      MIdentifier exp2 = (MIdentifier)n.f2.accept(this, argu);
+	  MType exp1 = n.f0.accept(this, argu);
+      MType exp2 = n.f2.accept(this, argu);
       checkExpEqual(exp1, "int", "Left expression of '+' is not a int");
       checkExpEqual(exp2, "int", "Right expression of '+' is not a int");
       
-      return new MIdentifier(null, "int", exp1.getLine(), exp1.getLine());
+      return new MType("int", exp1.getLine(), exp1.getLine());
    }
 
    /**
@@ -598,12 +636,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> PrimaryExpression()
 	*/
    public MType visit(MinusExpression n, MType argu) {
-	  MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
-      MIdentifier exp2 = (MIdentifier)n.f2.accept(this, argu);
+	  MType exp1 = n.f0.accept(this, argu);
+      MType exp2 = n.f2.accept(this, argu);
       checkExpEqual(exp1, "int", "Left expression of '-' is not a int");
       checkExpEqual(exp2, "int", "Right expression of '-' is not a int");
       
-      return new MIdentifier(null, "int", exp1.getLine(), exp1.getLine());
+      return new MType("int", exp1.getLine(), exp1.getLine());
    }
 
    /**
@@ -612,12 +650,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> PrimaryExpression()
 	*/
    public MType visit(TimesExpression n, MType argu) {
-	  MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
-      MIdentifier exp2 = (MIdentifier)n.f2.accept(this, argu);
+	  MType exp1 = n.f0.accept(this, argu);
+      MType exp2 = n.f2.accept(this, argu);
       checkExpEqual(exp1, "int", "Left expression of '*' is not a int");
       checkExpEqual(exp2, "int", "Right expression of '*' is not a int");
       
-      return new MIdentifier(null, "int", exp1.getLine(), exp1.getLine());
+      return new MType("int", exp1.getLine(), exp1.getLine());
    }
 
    /**
@@ -627,12 +665,20 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f3 -> "]"
 	*/
    public MType visit(ArrayLookup n, MType argu) {
-      MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
-      MIdentifier exp2 = (MIdentifier)n.f2.accept(this, argu);
-      checkExpEqual(exp1, "int[]", "Left expression of '[' is not an array");
+      MType id = n.f0.accept(this, argu);
+     
+      /*
+      if (exp1 == null) {
+    	  ErrorPrinter.print(id.getLine(), id.getColumn(), 
+    			  "Undefined variable \'" + id.getName() + "\'");
+      }
+      */
+      
+      MType exp2 = n.f2.accept(this, argu);
+      checkExpEqual(id, "int[]", "Left expression of '[' is not an array");
       checkExpEqual(exp2, "int", "INdex is not an integer");
       
-      return new MIdentifier(null, "int", exp1.getLine(), exp1.getLine());
+      return new MType("int", id.getLine(), id.getLine());
    }
 
    /**
@@ -641,28 +687,78 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> "length"
 	*/
    public MType visit(ArrayLength n, MType argu) {
-      MIdentifier exp1 = (MIdentifier)n.f0.accept(this, argu);
+      MType exp1 = n.f0.accept(this, argu);
       checkExpEqual(exp1, "int[]", "Left expression of '[' is not an array");
 
-      return new MIdentifier(null, "int", exp1.getLine(), exp1.getLine());
+      return new MType("int", exp1.getLine(), exp1.getLine());
    }
 
    /**
-* f0 -> PrimaryExpression()
-* f1 -> "."
-* f2 -> Identifier()
-* f3 -> "("
-* f4 -> ( ExpressionList() )?
-* f5 -> ")"
-*/
+    * f0 -> PrimaryExpression()
+    * f1 -> "."
+    * f2 -> Identifier()
+    * f3 -> "("
+    * f4 -> ( ExpressionList() )?
+    * f5 -> ")"
+    */
    public MType visit(MessageSend n, MType argu) {
       MType _ret=null;
-      n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
-      n.f2.accept(this, argu);
-      n.f3.accept(this, argu);
-      n.f4.accept(this, argu);
-      n.f5.accept(this, argu);
+      
+      int tmpParaNum2 = this.paraNum;
+	  this.paraNum = -1;
+	  MType id = n.f0.accept(this, argu);
+	  this.paraNum = tmpParaNum2;
+      
+      
+      String methodName = ((MIdentifier)n.f2.accept(this, argu)).getName();
+      String className = "";
+          
+      if (id instanceof  MIdentifier) {
+    	  MVar var = ((VarContainer)argu).getVar(((MIdentifier)id).getName());
+    	  if (var == null) {
+        	  ErrorPrinter.print(id.getLine(), id.getColumn(), 
+        			  "Undefined variable \'" + ((MIdentifier)id).getName() + "\'");
+        	  
+        	  return new MType("undefined type", id.getLine(), id.getColumn());
+    	  } else {
+    		  className = var.getType();
+    	  }
+      } else {
+    	  className = id.getType();
+      }
+      
+      MClass mclass = allClassesList.getClass(className);
+      if (mclass == null) {
+    	  ErrorPrinter.print(id.getLine(), id.getColumn(), 
+    			  "Undefined class \'" + className + "\'");
+    	  
+    	  return new MType("undefined type", id.getLine(), id.getColumn());	  
+      }
+      
+	  MMethod method = (mclass).getMethod(methodName);
+	  if (method == null) {
+    	  ErrorPrinter.print(id.getLine(), id.getColumn(), 
+    			  "Undefined method \'" + methodName + "\' in class " + className);
+    	  
+    	  return new MType("undefined type", id.getLine(), id.getColumn());	  		  
+	  }
+	  
+	  _ret = new MType(method.getReturnType(), id.getLine(), id.getColumn());
+   
+	  int tmpParaNum = this.paraNum;
+	  MMethod tmpMethod = this.callingMethod;
+      this.paraNum = 0;
+      this.callingMethod = method;
+      
+	  n.f4.accept(this, argu);
+	  if (this.paraNum < method.getParamSize()) {
+		  ErrorPrinter.print(_ret.getLine(), _ret.getColumn(), 
+			   " Number of param in MessageSend doesn't match ");
+	  }
+	  
+      this.paraNum = tmpParaNum;
+      this.callingMethod = tmpMethod;
+      
       return _ret;
    }
 
@@ -699,37 +795,46 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	*       | NotExpression()
 	*       | BracketExpression()
 	*/
+   // 只有identifier返回 MIdentifier，其他均返回MType
    public MType visit(PrimaryExpression n, MType argu) {
-      MIdentifier id = (MIdentifier)n.f0.accept(this, argu);
+      MType _ret = n.f0.accept(this, argu);
       
-      //如果没有type，表明是一个已经声明的变量(indentifier)，在所在的方法中找到相应的变量
-      //返回该变量
-      if (id != null && id.getType() == null && id.getName() != null) {
-    	  MVar newVar = ((VarContainer)argu).getVar(id.getName());
-    	  if (newVar != null) id = newVar;
+      //如果返回类型是Identifer，在PrimaryExpression中只可能是变量名，
+      //找到该变量，并且返回
+
+      if (_ret instanceof MIdentifier) {
+    	  MVar newVar = ((VarContainer)argu).getVar(((MIdentifier)_ret).getName());
+    	  if (newVar == null) {
+    		  ErrorPrinter.print(_ret.getLine(), _ret.getColumn(), 
+   				   "Undefined variable \'" + ((MIdentifier)_ret).getName() + "\'");
+    		  ((MIdentifier)_ret).setType("undefined type");
+    	  } else {
+    		  ((MIdentifier)_ret).setType(newVar.getType());
+    	  }
       }
-      return id;
+      
+      return _ret;
    }
 
    /**
 	* f0 -> <INTEGER_LITERAL>
 	*/
    public MType visit(IntegerLiteral n, MType argu) {
-	   return new MIdentifier(n.f0.tokenImage, "int", n.f0.beginLine, n.f0.beginColumn);
+	   return new MType("int", n.f0.beginLine, n.f0.beginColumn);
    }
 
    /**
 	* f0 -> "true"
 	*/
    public MType visit(TrueLiteral n, MType argu) {
-	   return new MIdentifier(n.f0.tokenImage, "boolean", n.f0.beginLine, n.f0.beginColumn);
+	   return new MType("boolean", n.f0.beginLine, n.f0.beginColumn);
    }
 
    /**
 	* f0 -> "false"
 	*/
    public MType visit(FalseLiteral n, MType argu) {
-	   return new MIdentifier(n.f0.tokenImage, "boolean", n.f0.beginLine, n.f0.beginColumn);
+	   return new MType("boolean", n.f0.beginLine, n.f0.beginColumn);
    }
 
    /**
@@ -748,11 +853,16 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
    public MType visit(ThisExpression n, MType argu) {
       MIdentifier parent = ((MIdentifier) argu).getParent();
       
+      if (!(parent instanceof MClass)) {
+    	  System.err.println(parent.getName() + " is not an MClass");
+      }
+      /*
       while (parent != null && !(parent instanceof MClass)) {
     	  parent = parent.getParent();
       }
-	  
-      return new MIdentifier("this", parent.getName(), n.f0.beginLine, n.f0.beginColumn);
+	  */
+      
+      return new MType(parent.getName(), n.f0.beginLine, n.f0.beginColumn);
    }
 
    /**
@@ -767,12 +877,12 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       
-      MIdentifier exp = (MIdentifier)n.f3.accept(this, argu);
+      MType exp = n.f3.accept(this, argu);
       checkExpEqual(exp, "int", "Array length is not an integer");
       
       n.f4.accept(this, argu);
    
-      return new MIdentifier(null, "int[]", n.f0.beginLine, n.f0.beginColumn);
+      return new MType("int[]", n.f0.beginLine, n.f0.beginColumn);
    }
 
    /**
@@ -787,7 +897,7 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
       
       MIdentifier id = (MIdentifier)n.f1.accept(this, argu);
       checkTypeDeclared(id);
-      _ret = new MIdentifier(null, id.getName(), id.getLine(), id.getColumn());
+      _ret = new MType(id.getName(), id.getLine(), id.getColumn());
       
       n.f2.accept(this, argu);
       n.f3.accept(this, argu);
@@ -799,10 +909,10 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f1 -> Expression()
 	*/
    public MType visit(NotExpression n, MType argu) {
-      MIdentifier exp = (MIdentifier)n.f1.accept(this, argu);
-      checkExpEqual(exp, "boolean", "Condition expression is not a boolean");
+	  MType exp = n.f1.accept(this, argu);
+      checkExpEqual(exp, "boolean", "right expression is not a boolean");
       
-      return new MIdentifier(null, "boolean", exp.getLine(), exp.getColumn());
+      return new MType("boolean", exp.getLine(), exp.getColumn());
    }
 
    /**
@@ -811,10 +921,9 @@ public class TypeCheckVisitor extends GJDepthFirst<MType, MType> {
 	* f2 -> ")"
 	*/
    public MType visit(BracketExpression n, MType argu) {
-      MIdentifier exp = (MIdentifier)n.f1.accept(this, argu);
-      checkExpEqual(exp, null, null);
+      MType _ret = n.f1.accept(this, argu);
       
-      return exp;
+      return _ret;
    }
 
 }

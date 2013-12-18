@@ -1,10 +1,10 @@
 class test107{
     public static void main(String[] a){
-	   System.out.println(new CT().hzz());
+	   System.out.println(new A().hzz());
     }
 }
 
-class CT {
+class A extends B {
     public int hzz() {
         boolean f1;
         boolean f2;
@@ -21,4 +21,8 @@ class CT {
         
         return ret;
     }
+}
+
+class B extends C  {
+
 }
